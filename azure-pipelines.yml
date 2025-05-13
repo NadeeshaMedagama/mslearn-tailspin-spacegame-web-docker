@@ -5,8 +5,6 @@ variables:
   buildConfiguration: 'Release'
   webRepository: 'web'
   tag: '$(Build.BuildId)'
-  wwwrootDir: 'Tailspin.SpaceGame.Web/wwwroot'
-  dotnetSdkVersion: '6.x'
 
 stages:
 - stage: 'Build'
@@ -17,48 +15,6 @@ stages:
     pool:
       vmImage: 'ubuntu-20.04'
     steps:
-    - task: UseDotNet@2
-      displayName: 'Use .NET SDK $(dotnetSdkVersion)'
-      inputs:
-        version: '$(dotnetSdkVersion)'
-
-    - task: Npm@1
-      displayName: 'Run npm install'
-      inputs:
-        verbose: false
-
-    - script: './node_modules/.bin/node-sass $(wwwrootDir) --output $(wwwrootDir)'
-      displayName: 'Compile Sass assets'
-
-    - task: gulp@1
-      displayName: 'Run gulp tasks'
-
-    - script: 'echo "$(Build.DefinitionName), $(Build.BuildId), $(Build.BuildNumber)" > buildinfo.txt'
-      displayName: 'Write build info'
-      workingDirectory: $(wwwrootDir)
-
-    - task: DotNetCoreCLI@2
-      displayName: 'Restore project dependencies'
-      inputs:
-        command: 'restore'
-        projects: '**/*.csproj'
-
-    - task: DotNetCoreCLI@2
-      displayName: 'Build the project - $(buildConfiguration)'
-      inputs:
-        command: 'build'
-        arguments: '--no-restore --configuration $(buildConfiguration)'
-        projects: '**/*.csproj'
-
-    - task: DotNetCoreCLI@2
-      displayName: 'Publish the project - $(buildConfiguration)'
-      inputs:
-        command: 'publish'
-        projects: '**/*.csproj'
-        publishWebProjects: false
-        arguments: '--no-build --configuration $(buildConfiguration) --output $(Build.ArtifactStagingDirectory)/$(buildConfiguration)'
-        zipAfterPublish: true
-
     - task: Docker@2
       displayName: 'Build and push the image to container registry'
       inputs:
@@ -69,9 +25,6 @@ stages:
         containerRegistry: 'Container Registry Connection'
         tags: |
           $(tag)
-
-    - publish: '$(Build.ArtifactStagingDirectory)'
-      artifact: drop
 
 - stage: 'Deploy'
   displayName: 'Deploy the container'
@@ -86,6 +39,6 @@ stages:
     steps:
     - task: AzureWebAppContainer@1
       inputs:
-        appName: $(WebAppName)
-        azureSubscription: 'Resource Manager - Tailspin - Space Game'
-        imageName: $(RegistryName)/$(webRepository):$(Build.BuildId)
+       appName: $(WebAppName)
+       azureSubscription: 'Resource Manager - Tailspin - Space Game'
+       imageName: $(RegistryName)/$(webRepository):$(build.buildId)
